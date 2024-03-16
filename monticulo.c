@@ -32,9 +32,11 @@ int insertar(tipoElemento x, Monticulo *m)
 {
     if (m->tamanno < MAXIMO) // Si el montículo no está lleno
     {
-        m->tamanno++;                          // Incrementa el tamaño del montículo
-        m->elemento[m->tamanno] = x;           // Inserta el elemento en la última posición
-        filtradoAscendente(m, m->tamanno - 1); // Filtra el elemento hacia arriba
+        m->tamanno++;                // Incrementa el tamaño del montículo
+        m->elemento[m->tamanno] = x; // Inserta el elemento en la última posición
+        printf(" - Insertado elemento %d\n", x.clave);
+        if (m->tamanno != 1)
+            filtradoAscendente(m, m->tamanno); // Filtra el elemento hacia arriba
         return 0;                              // Inserción correcta
     }
     else
@@ -49,11 +51,11 @@ int eliminarMinimo(Monticulo *m, tipoElemento *minimo)
 {
     if (m->tamanno > 0) // Si el montículo no está vacío
     {
-        *minimo = m->elemento[1];                     // Devuelve el mínimo por parámetro
+        *minimo = m->elemento[1];                 // Devuelve el mínimo por parámetro
         m->elemento[1] = m->elemento[m->tamanno]; // El último elemento ocupa el lugar del mínimo
-        m->tamanno--;                                 // Decrementa el tamaño del montículo
-        filtradoDescendente(m, 1);                    // Filtra el elemento hacia abajo
-        return 0;                                     // Eliminación correcta
+        m->tamanno--;                             // Decrementa el tamaño del montículo
+        filtradoDescendente(m, 1);                // Filtra el elemento hacia abajo
+        return 0;                                 // Eliminación correcta
     }
     else
     {
@@ -136,48 +138,92 @@ void crearMonticulo(Monticulo *m)
 //
 void filtradoAscendente(Monticulo *m, int i)
 {
-    tipoElemento x = m->elemento[i]; // Guarda el elemento a filtrar
-    while (m->elemento[i / 2].clave > m->elemento[i].clave && i != 1)
-    {                                        // Mientras el padre sea mayor que el hijo
-        m->elemento[i] = m->elemento[i / 2]; // El padre ocupa el lugar del hijo
-        i = i / 2;                           // El hueco se traslada al lugar del padre
+    tipoElemento nodo = m->elemento[i];
+    int hueco = i;
+    while (hueco > 1) // Mientras el hueco no este en la raiz del monticulo
+    {
+        if (nodo.clave < m->elemento[hueco / 2].clave) // Si el padre es mayor que el hueco
+        {
+            m->elemento[hueco] = m->elemento[hueco / 2]; // Movemos el padre el hueco, y el hueco al lugar del padre
+            hueco = hueco / 2;
+        }
+        else // El padre es menor que el hueco
+        {
+            m->elemento[hueco] = nodo; // Asigno el nodo que ha ido ascendiendo al hueco
+            return;
+        }
     }
-    m->elemento[i] = x; // El elemento a filtrar ocupa el hueco que queda
+    if (hueco == 1)                // Si el hueco ha llegado a la raiz del monticulo
+        m->elemento[hueco] = nodo; // Asigno el nodo que ha ido ascendiendo a la raíz
 }
 //
 //  Función auxiliar: Filtrado Descendente
 //
 void filtradoDescendente(Monticulo *m, int i)
 {
-    tipoElemento x = m->elemento[i]; // Guarda el elemento a filtrar
-    tipoElemento hijo;
+    int hijoUsado, hueco = i;
+    tipoElemento raiz = m->elemento[i]; // Guarda el elemento a filtrar
+    tipoElemento hijoMenor;
     bool finFiltrado = false;
-    while ((2 * i) <= m->tamanno && finFiltrado != true)
-    { // Mientras tenga al menos un hijo
-        if ((2 * i) == m->tamanno)
-        {                              // Si solo tiene un hijo
-            hijo = m->elemento[2 * i]; // Guardo el hijo izquierdo (único hijo)
-        }
-        else
-        { // Si tiene dos hijos
-            if (m->elemento[2 * i].clave < m->elemento[2 * i + 1].clave)
-            {                              // Si el hijo izquierdo es menor que el derecho
-                hijo = m->elemento[2 * i]; // Guardo el hijo izquierdo
-            }
-            else
+    while (hueco * 2 <= m->tamanno && finFiltrado == false) // Mientras el hueco tenga al menos un hijo, hacer
+    {
+        hijoMenor = m->elemento[hueco * 2]; // Por ahora, su hijo más pequeño es el izquierdo
+        hijoUsado = 0;                      // Si utilizo el hijo izquierdo para el filtrado, hijoUsado = 0
+        if (hueco * 2 + 1 <= m->tamanno)    // Tiene hijo derecho
+        {
+            if (hijoMenor.clave > m->elemento[hueco * 2 + 1].clave) // Comparamos los hijos izquierdo y derecho
             {
-                hijo = m->elemento[2 * i + 1]; // Guardo el hijo derecho
+                hijoMenor = m->elemento[hueco * 2 + 1]; // Si el hijo derecho es el más pequeño, se guarda
+                hijoUsado = 1;                          // Si utilizo el hijo izquierdo para el filtrado, hijoUsado = 1
             }
         }
-        if (hijo.clave < x.clave) // Si el hijo es menor que el padre
+        if (hijoMenor.clave < raiz.clave) // Si el hijo menor es más pequeño que el padre, sube a su posición
         {
-            m->elemento[i] = hijo; // El hijo ocupa el lugar del padre
-            i = 2 * i;             // El hueco se traslada al lugar del hijo
+            m->elemento[hueco] = hijoMenor;
+            if (hijoUsado == 0) // Si el hijo usado es el izquiedo
+            {
+                hueco = hueco * 2; // Movemos el hueco al lugar del hijo izquierdo
+            }
+            else // Si el hijo usado es el derecho
+            {
+                hueco = hueco * 2 + 1; // Movemos el hueco al lugar del hijo derecho
+            }
         }
-        else
+        else // Si el hijo menor no es más pequeño que el padre
         {
-            finFiltrado = true; // Si el padre es menor que el hijo, termina el filtrado
+            finFiltrado = true;
         }
     }
-    m->elemento[i] = x; // El elemento a filtrar ocupa el hueco que queda
+    m->elemento[hueco] = raiz; // Asigno la raíz en el hueco (en caso de que sus hijos no sean menores o en caso de no tener hijos)
+}
+//
+//  Implementación del algoritmo de ordenación por montículo (heapsort)
+//
+void heapsort(Monticulo *m)
+{
+
+    int i, tamOriginal = m->tamanno;
+    tipoElemento raiz;
+
+    crearMonticulo(m); // Creo un montículo con los elementos del array
+
+    printf("El monticulo creado a partir del array es:\n"); // Imprimo el monticulo formado
+    for (i = 1; i <= m->tamanno; i++)
+        printf("%d ", m->elemento[i].clave);
+    printf("\n");
+
+    for (i = 0; i < tamOriginal; i++) // Para cada uno de los elementos del array
+    {
+        if (eliminarMinimo(m, &raiz)) // Si no puede eliminar el elemento mínimo
+        {
+            printf("Error al intentar eliminar la raizdel monticulo.\n");
+            return;
+        }
+        else // Si elimina la raíz correctamente
+        {
+            printf("\t- Elemento eliminado %d\n", raiz.clave);
+            m->elemento[tamOriginal - i] = raiz; // Almaceno la raiz eliminada en el hueco que ha quedado al final del monticulo
+        }
+    }
+    m->tamanno = tamOriginal; // Restauro el tamanno original del monticulo para poder utilizarlo ya que al eliminar todos sus elementos, habría quedado vacío
 }
